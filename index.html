@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>MARINA | Monitoring Aduan Rambu, Infrastruktur, dan Akses Jalan</title>
+
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="loadingOverlay" class="loading-overlay hidden" aria-live="polite">
+    <div class="loading-box">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <p>Memproses data...</p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden">
+    <span id="toastText"></span>
+  </div>
+
+  <header class="site-header">
+    <nav class="nav-wrap">
+      <a href="#beranda" class="brand" aria-label="MARINA Beranda">
+        <span class="brand-mark"><i class="fa-solid fa-road-circle-exclamation"></i></span>
+        <span>
+          <strong>MARINA</strong>
+          <small>Monitoring Aduan Rambu, Infrastruktur, dan Akses Jalan</small>
+        </span>
+      </a>
+
+      <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka navigasi">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <div class="nav-menu" id="navMenu">
+        <a href="#lapor">Buat Aduan</a>
+        <a href="#peta">Peta Aduan</a>
+        <a href="#dashboardPublik">Dashboard</a>
+        <button type="button" class="btn btn-soft" onclick="openAdminModal()">
+          <i class="fa-solid fa-user-shield"></i> Admin
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section id="beranda" class="hero-section">
+      <div class="hero-overlay"></div>
+      <div class="hero-grid container">
+        <div class="hero-copy">
+          <span class="eyebrow">Portal Aduan Sarana Prasarana Lalu Lintas Kabupaten Bantaeng</span>
+          <h1>Laporkan kerusakan rambu, infrastruktur, dan akses jalan secara cepat berbasis lokasi.</h1>
+          <p>
+            MARINA membantu masyarakat menyampaikan aduan lengkap dengan titik lokasi, foto, dan detail permasalahan.
+            Laporan masuk ke dashboard admin, tersimpan pada Spreadsheet, foto masuk ke Google Drive, dan notifikasi email
+            terkirim otomatis.
+          </p>
+          <div class="hero-actions">
+            <a href="#lapor" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Kirim Aduan</a>
+            <a href="#peta" class="btn btn-glass"><i class="fa-solid fa-map-location-dot"></i> Lihat Peta</a>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-top">
+            <span class="pulse-dot"></span>
+            <span>Sistem aktif</span>
+          </div>
+          <div class="mini-stat-grid">
+            <div>
+              <strong id="heroTotal">0</strong>
+              <small>Total Aduan</small>
+            </div>
+            <div>
+              <strong id="heroDiproses">0</strong>
+              <small>Diproses</small>
+            </div>
+            <div>
+              <strong id="heroSelesai">0</strong>
+              <small>Selesai</small>
+            </div>
+          </div>
+          <div class="hero-card-note">
+            <i class="fa-solid fa-bell"></i>
+            Admin dan pelapor menerima email otomatis setelah aduan dikirim.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="lapor" class="section container">
+      <div class="section-heading">
+        <span class="eyebrow dark">Form Aduan Masyarakat</span>
+        <h2>Kirim laporan dengan lokasi dan foto kejadian.</h2>
+        <p>Tekan tombol <strong>Gunakan Lokasi Saya</strong> agar titik koordinat otomatis mengikuti posisi pelapor.</p>
+      </div>
+
+      <div class="report-layout">
+        <form id="formAduan" class="form-card">
+          <div class="form-section-title">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Identitas Pelapor</span>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Nama Pelapor <span>*</span>
+              <input type="text" id="namaPelapor" placeholder="Nama lengkap" required />
+            </label>
+            <label>
+              Email Pelapor
+              <input type="email" id="emailPelapor" placeholder="nama@email.com" />
+            </label>
+            <label>
+              Nomor HP/WhatsApp <span>*</span>
+              <input type="tel" id="hpPelapor" placeholder="08xxxxxxxxxx" required />
+            </label>
+          </div>
+
+          <div class="form-section-title">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Detail Permasalahan</span>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Kategori Aduan <span>*</span>
+              <select id="kategoriAduan" required>
+                <option value="">Pilih kategori</option>
+                <option value="Rambu Lalu Lintas">Rambu Lalu Lintas</option>
+                <option value="Infrastruktur Jalan">Infrastruktur Jalan</option>
+                <option value="Akses Jalan">Akses Jalan</option>
+                <option value="Marka Jalan">Marka Jalan</option>
+                <option value="APILL/Lampu Lalu Lintas">APILL/Lampu Lalu Lintas</option>
+                <option value="Penerangan Jalan">Penerangan Jalan</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </label>
+            <label>
+              Prioritas
+              <select id="prioritasAduan">
+                <option value="Normal">Normal</option>
+                <option value="Tinggi">Tinggi</option>
+                <option value="Darurat">Darurat</option>
+              </select>
+            </label>
+            <label>
+              Kecamatan/Lokasi Administratif
+              <input type="text" id="kecamatanAduan" placeholder="Contoh: Bantaeng, Pa'jukukang, Bissappu" />
+            </label>
+          </div>
+
+          <label class="full-field">
+            Judul Aduan <span>*</span>
+            <input type="text" id="judulAduan" placeholder="Contoh: Rambu lalu lintas roboh di dekat simpang" required />
+          </label>
+
+          <label class="full-field">
+            Uraian Aduan <span>*</span>
+            <textarea id="deskripsiAduan" placeholder="Jelaskan kondisi, dampak, dan patokan lokasi..." required></textarea>
+          </label>
+
+          <div class="form-section-title">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            <span>Lokasi Kejadian</span>
+          </div>
+
+          <div class="location-actions">
+            <button type="button" class="btn btn-primary" onclick="gunakanLokasiSaya()">
+              <i class="fa-solid fa-location-crosshairs"></i> Gunakan Lokasi Saya
+            </button>
+            <button type="button" class="btn btn-soft-dark" onclick="clearReportLocation()">
+              <i class="fa-solid fa-rotate-left"></i> Reset Titik
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Latitude <span>*</span>
+              <input type="text" id="latitudeAduan" placeholder="-5.xxxxxx" required />
+            </label>
+            <label>
+              Longitude <span>*</span>
+              <input type="text" id="longitudeAduan" placeholder="119.xxxxxx" required />
+            </label>
+            <label>
+              Alamat/Patokan Lokasi
+              <input type="text" id="alamatAduan" placeholder="Patokan lokasi kejadian" />
+            </label>
+          </div>
+
+          <p class="help-text"><i class="fa-solid fa-circle-info"></i> Titik pada peta bisa dipindahkan dengan klik lokasi di peta kecil.</p>
+          <div id="reportMap" class="report-map"></div>
+
+          <label class="full-field file-field">
+            Foto Aduan <span>*</span>
+            <input type="file" id="fotoAduan" accept="image/*" required />
+            <small>Format gambar JPG/PNG/WEBP. Disarankan maksimal 5 MB.</small>
+          </label>
+
+          <div id="previewWrap" class="preview-wrap hidden">
+            <img id="previewFoto" alt="Pratinjau foto aduan" />
+          </div>
+
+          <div class="form-submit-row">
+            <button type="submit" class="btn btn-primary btn-large">
+              <i class="fa-solid fa-paper-plane"></i> Kirim Aduan
+            </button>
+            <button type="button" class="btn btn-light" onclick="resetFormAduan()">
+              <i class="fa-solid fa-eraser"></i> Bersihkan Form
+            </button>
+          </div>
+        </form>
+
+        <aside class="info-panel">
+          <div class="info-card">
+            <i class="fa-solid fa-route"></i>
+            <h3>Alur Aduan</h3>
+            <ol>
+              <li>Isi identitas dan detail masalah.</li>
+              <li>Ambil titik lokasi otomatis.</li>
+              <li>Upload foto bukti lapangan.</li>
+              <li>Aduan masuk ke dashboard admin.</li>
+              <li>Email bukti penerimaan dikirim ke pelapor.</li>
+            </ol>
+          </div>
+
+          <div class="info-card status-info">
+            <h3>Status Laporan</h3>
+            <div><span class="status-pill diterima">Diterima</span> Laporan berhasil masuk.</div>
+            <div><span class="status-pill diverifikasi">Diverifikasi</span> Data sedang dicek.</div>
+            <div><span class="status-pill diproses">Diproses</span> Sedang ditindaklanjuti.</div>
+            <div><span class="status-pill selesai">Selesai</span> Aduan telah selesai.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="peta" class="section map-section">
+      <div class="container">
+        <div class="section-heading map-heading">
+          <span class="eyebrow dark">Peta Aduan</span>
+          <h2>Monitoring titik aduan di wilayah Kabupaten Bantaeng.</h2>
+          <p>Setiap aduan yang masuk akan muncul sebagai penanda pada peta sesuai koordinat yang dikirim pelapor.</p>
+        </div>
+
+        <div class="map-toolbar">
+          <select id="publicFilterStatus">
+            <option value="">Semua Status</option>
+            <option value="Diterima">Diterima</option>
+            <option value="Diverifikasi">Diverifikasi</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Ditolak">Ditolak</option>
+          </select>
+          <select id="publicFilterKategori">
+            <option value="">Semua Kategori</option>
+            <option value="Rambu Lalu Lintas">Rambu Lalu Lintas</option>
+            <option value="Infrastruktur Jalan">Infrastruktur Jalan</option>
+            <option value="Akses Jalan">Akses Jalan</option>
+            <option value="Marka Jalan">Marka Jalan</option>
+            <option value="APILL/Lampu Lalu Lintas">APILL/Lampu Lalu Lintas</option>
+            <option value="Penerangan Jalan">Penerangan Jalan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <button type="button" class="btn btn-soft-dark" onclick="loadPublicData()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+
+        <div id="mainMap" class="main-map"></div>
+      </div>
+    </section>
+
+    <section id="dashboardPublik" class="section container">
+      <div class="section-heading">
+        <span class="eyebrow dark">Dashboard Publik</span>
+        <h2>Ringkasan laporan sarana prasarana lalu lintas.</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card total"><span id="statTotal">0</span><small>Total Aduan</small></div>
+        <div class="stat-card diterima"><span id="statDiterima">0</span><small>Diterima</small></div>
+        <div class="stat-card diverifikasi"><span id="statDiverifikasi">0</span><small>Diverifikasi</small></div>
+        <div class="stat-card diproses"><span id="statDiproses">0</span><small>Diproses</small></div>
+        <div class="stat-card selesai"><span id="statSelesai">0</span><small>Selesai</small></div>
+        <div class="stat-card darurat"><span id="statDarurat">0</span><small>Prioritas Darurat</small></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>Aduan Berdasarkan Status</h3>
+          <canvas id="chartStatus"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Aduan Berdasarkan Kategori</h3>
+          <canvas id="chartKategori"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>MARINA</strong>
+        <p>Monitoring Aduan Rambu, Infrastruktur, dan Akses Jalan Kabupaten Bantaeng.</p>
+      </div>
+      <div>
+        <small>Portal berbasis Google Apps Script, Spreadsheet, Drive, dan Email.</small>
+      </div>
+    </div>
+  </footer>
+
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-content login-modal">
+      <button type="button" class="modal-close" onclick="closeAdminModal()" aria-label="Tutup modal">×</button>
+      <div class="modal-heading">
+        <i class="fa-solid fa-user-shield"></i>
+        <h2>Login Admin MARINA</h2>
+        <p>Masuk untuk memantau dan memperbarui status aduan.</p>
+      </div>
+      <form id="formLoginAdmin">
+        <label>Username<input type="text" id="adminUsername" autocomplete="username" required /></label>
+        <label>Password<input type="password" id="adminPassword" autocomplete="current-password" required /></label>
+        <button type="submit" class="btn btn-primary btn-full"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+      </form>
+    </div>
+  </div>
+
+  <section id="adminApp" class="admin-app hidden">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <i class="fa-solid fa-road-circle-exclamation"></i>
+        <div><strong>MARINA</strong><small>Admin Panel</small></div>
+      </div>
+      <button type="button" onclick="showAdminPage('adminDashboard')" class="admin-nav active"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+      <button type="button" onclick="showAdminPage('adminLaporan')" class="admin-nav"><i class="fa-solid fa-list-check"></i> Data Aduan</button>
+      <button type="button" onclick="showAdminPage('adminPeta')" class="admin-nav"><i class="fa-solid fa-map-location-dot"></i> Peta Admin</button>
+      <button type="button" onclick="logoutAdmin()" class="admin-nav danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button type="button" class="admin-menu" onclick="toggleAdminSidebar()"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <h2 id="adminPageTitle">Dashboard Admin</h2>
+          <p id="adminGreeting">Selamat datang.</p>
+        </div>
+        <button type="button" class="btn btn-soft-dark" onclick="loadAdminData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </header>
+
+      <section id="adminDashboard" class="admin-page">
+        <div class="stats-grid admin-stats">
+          <div class="stat-card total"><span id="adminTotal">0</span><small>Total Aduan</small></div>
+          <div class="stat-card diterima"><span id="adminDiterima">0</span><small>Diterima</small></div>
+          <div class="stat-card diverifikasi"><span id="adminDiverifikasi">0</span><small>Diverifikasi</small></div>
+          <div class="stat-card diproses"><span id="adminDiproses">0</span><small>Diproses</small></div>
+          <div class="stat-card selesai"><span id="adminSelesai">0</span><small>Selesai</small></div>
+          <div class="stat-card darurat"><span id="adminDarurat">0</span><small>Darurat</small></div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Aduan Terbaru</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Tanggal</th>
+                  <th>Pelapor</th>
+                  <th>Kategori</th>
+                  <th>Judul</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminRecentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminLaporan" class="admin-page hidden">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Data Aduan Masyarakat</h3>
+            <div class="admin-filters">
+              <input type="text" id="adminSearch" placeholder="Cari kode, pelapor, judul, lokasi..." />
+              <select id="adminFilterStatus">
+                <option value="">Semua Status</option>
+                <option value="Diterima">Diterima</option>
+                <option value="Diverifikasi">Diverifikasi</option>
+                <option value="Diproses">Diproses</option>
+                <option value="Selesai">Selesai</option>
+                <option value="Ditolak">Ditolak</option>
+              </select>
+              <select id="adminFilterKategori">
+                <option value="">Semua Kategori</option>
+                <option value="Rambu Lalu Lintas">Rambu Lalu Lintas</option>
+                <option value="Infrastruktur Jalan">Infrastruktur Jalan</option>
+                <option value="Akses Jalan">Akses Jalan</option>
+                <option value="Marka Jalan">Marka Jalan</option>
+                <option value="APILL/Lampu Lalu Lintas">APILL/Lampu Lalu Lintas</option>
+                <option value="Penerangan Jalan">Penerangan Jalan</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              <button type="button" class="btn btn-soft-dark" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Tanggal</th>
+                  <th>Pelapor</th>
+                  <th>Kontak</th>
+                  <th>Kategori</th>
+                  <th>Judul</th>
+                  <th>Lokasi</th>
+                  <th>Prioritas</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminPeta" class="admin-page hidden">
+        <div class="admin-card">
+          <h3>Peta Monitoring Admin</h3>
+          <div id="adminMap" class="admin-map"></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-content detail-modal">
+      <button type="button" class="modal-close" onclick="closeDetailModal()" aria-label="Tutup detail">×</button>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
